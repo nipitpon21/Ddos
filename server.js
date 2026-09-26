@@ -42,7 +42,7 @@ app.get('/v/:id', async (req, res) => {
 <head>
   <meta property="og:title" content="https://maps.google.com/" />
   <meta property="og:description" content="view" />
-  <meta property="og:image" content="https://i.imgur.com/XXXXXXX.jpg" />
+  <meta property="og:image" content="https://i.postimg.cc/Qx7MbrJ4/IMG-7780.jpg" />
   <meta property="og:url" content="https://${req.hostname}/v/${req.params.id}" />
   <meta property="og:type" content="website" />
   <meta name="twitter:card" content="summary_large_image" />
